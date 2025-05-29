@@ -8,7 +8,7 @@ function love.load()
     world:setCallbacks(beginContact, endContact)
 
     -- Physics settings/flags
-    gravityStrength = 20000 
+    gravityStrength = 3000 
     isThrusting = false
 
     -- Create the ship
@@ -18,7 +18,7 @@ function love.load()
     ship.fixture = love.physics.newFixture(ship.body, ship.shape)
     ship.fixture:setUserData({ id="ship" })
 
-    ship.thrustPower = 20
+    ship.thrustPower = 25
     ship.turnSpeed = 3 -- radians per second
 
     ship.body:setAngularDamping(3)
@@ -49,7 +49,7 @@ function love.update(dt)
             local distSq = dx * dx + dy * dy
 
             if distSq > 0.1 then -- prevent divide by zero
-                local forceMag = gravityStrength / distSq
+                local forceMag = (gravityStrength*planet.shape:getRadius()) / distSq
                 local angle = math.atan2(dy, dx)
                 local fx = math.cos(angle) * forceMag
                 local fy = math.sin(angle) * forceMag
