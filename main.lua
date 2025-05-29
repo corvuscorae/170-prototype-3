@@ -28,7 +28,7 @@ function love.load()
 
     -- Make planets
     planets.solar_system = {}
-    numPlanets = 5
+    numPlanets = 7  -- shouldnt exceed the number of audio loops available
     planetMinRadius = 5
     planetMaxRadius = 25
     planets.generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
@@ -155,6 +155,7 @@ end
 
 function love.keypressed(key)
     if key == "r" then
+        love.audio.stop()
         planets.clearPlanets()
         planets.generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
     end

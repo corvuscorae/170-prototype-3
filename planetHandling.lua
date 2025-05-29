@@ -1,4 +1,5 @@
 local ShuffleBag = require("shufflebag")
+local loops = require("loops")
 local P = {};
 
 P.solar_system = {}
@@ -11,6 +12,7 @@ local colors = {
     {0.5, 0.4, 1}   -- periwinkle
 }
 local colorBag = ShuffleBag.new(colors)
+local loopBag = ShuffleBag.new(loops)
 
 function P.generateSolarSystem(numPlanets, minRadius, maxRadius, maxAttempts)
     for i = 1, numPlanets do
@@ -44,6 +46,7 @@ function P.generateSolarSystem(numPlanets, minRadius, maxRadius, maxAttempts)
                 planet.body = love.physics.newBody(world, x, y, "static")
                 planet.shape = love.physics.newCircleShape(love.math.random(minRadius, maxRadius))
                 planet.color = colorBag:next()
+                planet.loop = loopBag:next()
                 planet.fixture = love.physics.newFixture(planet.body, planet.shape)
     
                 table.insert(P.solar_system, planet)
@@ -63,6 +66,13 @@ function P.destroyPlanet(planet)
         love.graphics.setColor(1, 0.5, 0.1, 0.8)
         love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), 5*planet.shape:getRadius())
     else
+        -- Play loop
+        if planet.alive and not planet.loop:isPlaying() then
+            planet.loop:setVolume(0.7)
+            planet.loop:setLooping(true)
+            love.audio.play(planet.loop)
+        end
+
         -- Safe to finalize destruction
         if planet.alive then
             print("planet " .. planet.fixture:getUserData().index .. " destroyed")
