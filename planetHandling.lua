@@ -1,3 +1,4 @@
+local ShuffleBag = require("shufflebag")
 local P = {};
 
 P.solar_system = {}
@@ -9,6 +10,7 @@ local colors = {
     {0.4, 1.7, 1},  -- light blue
     {0.5, 0.4, 1}   -- periwinkle
 }
+local colorBag = ShuffleBag.new(colors)
 
 function P.generateSolarSystem(numPlanets, minRadius, maxRadius, maxAttempts)
     for i = 1, numPlanets do
@@ -41,7 +43,7 @@ function P.generateSolarSystem(numPlanets, minRadius, maxRadius, maxAttempts)
                 planet.alive = true
                 planet.body = love.physics.newBody(world, x, y, "static")
                 planet.shape = love.physics.newCircleShape(love.math.random(minRadius, maxRadius))
-                planet.color = colors[math.random(#colors)]
+                planet.color = colorBag:next()
                 planet.fixture = love.physics.newFixture(planet.body, planet.shape)
     
                 table.insert(P.solar_system, planet)
