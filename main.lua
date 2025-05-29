@@ -1,4 +1,5 @@
 function love.load()
+    math.randomseed(os.time())
     width = 650
     height = 650
 
@@ -15,7 +16,7 @@ function love.load()
     ship.body = love.physics.newBody(world, width/4, height/4, "dynamic")
     ship.shape = love.physics.newPolygonShape(12, 10, 0, -15, -12, 10)    
     ship.fixture = love.physics.newFixture(ship.body, ship.shape)
-    ship.fixture:setUserData("ship")
+    ship.fixture:setUserData({ id="ship" })
 
     ship.thrustPower = 20
     ship.turnSpeed = 3 -- radians per second
@@ -23,13 +24,11 @@ function love.load()
     ship.body:setAngularDamping(3)
     ship.body:setLinearDamping(0.5)
 
-    -- Make planet
-    planet = {}
-    planet.alive = true
-    planet.body = love.physics.newBody(world, width/2, height/2, "static")
-    planet.shape = love.physics.newCircleShape(25)
-    planet.fixture = love.physics.newFixture(planet.body, planet.shape)
-    planet.fixture:setUserData("planet")
+    -- Make planets
+    solar_system = {}
+    local numPlanets = 3;
+    local planetMaxRadius = 25
+    generateSolarSystem(numPlanets, planetMaxRadius, 1000)
 
     -- Graphics setup
     love.window.setMode(width, height)
@@ -39,20 +38,22 @@ function love.update(dt)
     world:update(dt)
 
     -- Gravity well pull
-    if planet.alive == true then
-        local sx, sy = ship.body:getPosition()
-        local px, py = planet.body:getPosition()
+    for _, planet in ipairs(solar_system) do        
+        if planet.alive == true then
+            local sx, sy = ship.body:getPosition()
+            local px, py = planet.body:getPosition()
 
-        local dx = px - sx
-        local dy = py - sy
-        local distSq = dx * dx + dy * dy
+            local dx = px - sx
+            local dy = py - sy
+            local distSq = dx * dx + dy * dy
 
-        if distSq > 0.1 then -- prevent divide by zero
-            local forceMag = gravityStrength / distSq
-            local angle = math.atan2(dy, dx)
-            local fx = math.cos(angle) * forceMag
-            local fy = math.sin(angle) * forceMag
-            ship.body:applyForce(fx, fy)
+            if distSq > 0.1 then -- prevent divide by zero
+                local forceMag = gravityStrength / distSq
+                local angle = math.atan2(dy, dx)
+                local fx = math.cos(angle) * forceMag
+                local fy = math.sin(angle) * forceMag
+                ship.body:applyForce(fx, fy)
+            end
         end
     end
 
@@ -101,12 +102,14 @@ end
 
 function love.draw()
     -- Draw planet
-    if planet.alive == true then
-        love.graphics.setColor(0, 0, 1)
-        love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), planet.shape:getRadius())
-    
-        if planet.explosionTime then
-            destroyPlanet();
+    for _, planet in ipairs(solar_system) do        
+        if planet.alive == true then
+            love.graphics.setColor(0, 0, 1)
+            love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), planet.shape:getRadius())
+            
+            if planet.explosionTime then
+                destroyPlanet(planet);
+            end
         end
     end
 
@@ -128,20 +131,76 @@ function love.draw()
 end
 
 function beginContact(a, b, coll)
-    if (a:getUserData() == "planet" and b:getUserData() == "ship") or
-       (a:getUserData() == "ship" and b:getUserData() == "planet") then
-        if planet.alive then
-            planet.explosionTime = love.timer.getTime() -- trigger planet destruction
+    local aData = a:getUserData()
+    local bData = b:getUserData()
+
+    if (aData.id == "planet" and bData.id == "ship") or
+       (aData.id == "ship" and bData.id == "planet") then
+
+        for _, planet in ipairs(solar_system) do
+            if planet.alive then
+                local pData = planet.fixture:getUserData()
+                if pData and (pData.index == aData.index or pData.index == bData.index) then
+                    planet.explosionTime = love.timer.getTime() -- trigger planet destruction
+                end
+            end
+        end
+
+    end
+
+end
+
+function generateSolarSystem(numPlanets, planetRadius, maxAttempts)
+    for i = 1, numPlanets do
+        local placed = false
+        local attempts = 0
+    
+        while not placed and attempts < maxAttempts do
+            attempts = attempts + 1
+    
+            local angle = math.random() * 2 * math.pi
+            local dist = math.random(100, 250)
+            local x = width / 2 + math.cos(angle) * dist
+            local y = height / 2 + math.sin(angle) * dist
+    
+            local tooClose = false
+    
+            for _, other in ipairs(solar_system) do
+                local ox, oy = other.body:getPosition()
+                local dx = x - ox
+                local dy = y - oy
+                local dSq = dx * dx + dy * dy
+                if dSq < (planetRadius * 2)^2 then
+                    tooClose = true
+                    break
+                end
+            end
+    
+            if not tooClose then
+                local planet = {}
+                planet.alive = true
+                planet.body = love.physics.newBody(world, x, y, "static")
+                planet.shape = love.physics.newCircleShape(planetRadius)
+                planet.fixture = love.physics.newFixture(planet.body, planet.shape)
+    
+                table.insert(solar_system, planet)
+                planet.fixture:setUserData({ id="planet", index=#solar_system })
+                placed = true
+            end
+        end
+    
+        if not placed then
+            print("couldn't place planet " .. i .. " without overlap after " .. maxAttempts .. " attempts.")
         end
     end
 end
 
-function destroyPlanet()
+function destroyPlanet(planet)
     if love.timer.getTime() - planet.explosionTime < 1 then
         love.graphics.setColor(1, 0.5, 0.1, 0.8)
         love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), 100)
         
-        print("planet destroyed")
+        print("planet " .. planet.fixture:getUserData().index .. " destroyed")
         planet.alive = false
         planet.body:destroy()
     end
