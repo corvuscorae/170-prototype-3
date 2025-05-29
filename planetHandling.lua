@@ -1,0 +1,90 @@
+local P = {};
+
+P.solar_system = {}
+local colors = {
+    {1, 0.5, 0.4},  -- pink
+    {1, 0.7, 0.4},  -- light orange
+    {1, 0.9, 0.4},  -- light yellow
+    {0.4, 1, 0.7},  -- greenish-blue
+    {0.4, 1.7, 1},  -- light blue
+    {0.5, 0.4, 1}   -- periwinkle
+}
+
+function P.generateSolarSystem(numPlanets, minRadius, maxRadius, maxAttempts)
+    for i = 1, numPlanets do
+        local placed = false
+        local attempts = 0
+    
+        while not placed and attempts < maxAttempts do
+            attempts = attempts + 1
+    
+            local angle = math.random() * 2 * math.pi
+            local dist = math.random(100, 250)
+            local x = width / 2 + math.cos(angle) * dist
+            local y = height / 2 + math.sin(angle) * dist
+    
+            local tooClose = false
+    
+            for _, other in ipairs(P.solar_system) do
+                local ox, oy = other.body:getPosition()
+                local dx = x - ox
+                local dy = y - oy
+                local dSq = dx * dx + dy * dy
+                if dSq < (maxRadius * 2)^2 then
+                    tooClose = true
+                    break
+                end
+            end
+    
+            if not tooClose then
+                local planet = {}
+                planet.alive = true
+                planet.body = love.physics.newBody(world, x, y, "static")
+                planet.shape = love.physics.newCircleShape(love.math.random(minRadius, maxRadius))
+                planet.color = colors[math.random(#colors)]
+                planet.fixture = love.physics.newFixture(planet.body, planet.shape)
+    
+                table.insert(P.solar_system, planet)
+                planet.fixture:setUserData({ id="planet", index=#P.solar_system })
+                placed = true
+            end
+        end
+    
+        if not placed then
+            print("couldn't place planet " .. i .. " without overlap after " .. maxAttempts .. " attempts.")
+        end
+    end
+end
+
+function P.destroyPlanet(planet)
+    if (love.timer.getTime() - planet.explosionTime) < 0.02 then
+        love.graphics.setColor(1, 0.5, 0.1, 0.8)
+        love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), 5*planet.shape:getRadius())
+    else
+        -- Safe to finalize destruction
+        if planet.alive then
+            print("planet " .. planet.fixture:getUserData().index .. " destroyed")
+            planet.alive = false
+            planet.body:destroy()
+        end
+
+        -- Remove from solar_system
+        for i, p in ipairs(P.solar_system) do
+            if p == planet then
+                table.remove(P.solar_system, i)
+                break
+            end
+        end
+    end
+end
+
+function P.clearPlanets()
+    for _, planet in ipairs(P.solar_system) do
+        if planet.body and not planet.body:isDestroyed() then
+            planet.body:destroy()
+        end
+    end
+    P.solar_system = {}
+end
+
+return P

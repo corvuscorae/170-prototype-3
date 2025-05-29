@@ -1,3 +1,5 @@
+local planets = require("planetHandling")
+
 function love.load()
     math.randomseed(os.time())
     width = 650
@@ -25,11 +27,11 @@ function love.load()
     ship.body:setLinearDamping(0.5)
 
     -- Make planets
-    solar_system = {}
+    planets.solar_system = {}
     numPlanets = 5
     planetMinRadius = 5
     planetMaxRadius = 25
-    generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
+    planets.generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
 
     -- Graphics setup
     love.window.setMode(width, height)
@@ -39,7 +41,7 @@ function love.update(dt)
     world:update(dt)
 
     -- Gravity well pull
-    for _, planet in ipairs(solar_system) do        
+    for _, planet in ipairs(planets.solar_system) do        
         if planet.alive == true then
             local sx, sy = ship.body:getPosition()
             local px, py = planet.body:getPosition()
@@ -103,13 +105,13 @@ end
 
 function love.draw()
     -- Draw planet
-    for _, planet in ipairs(solar_system) do        
+    for _, planet in ipairs(planets.solar_system) do        
         if planet.alive == true then
-            love.graphics.setColor(0, 0, 1)
+            love.graphics.setColor(planet.color)
             love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), planet.shape:getRadius())
             
             if planet.explosionTime then
-                destroyPlanet(planet)
+                planets.destroyPlanet(planet)
             end
         end
     end
@@ -138,7 +140,7 @@ function beginContact(a, b, coll)
     if (aData.id == "planet" and bData.id == "ship") or
        (aData.id == "ship" and bData.id == "planet") then
 
-        for _, planet in ipairs(solar_system) do
+        for _, planet in ipairs(planets.solar_system) do
             if planet.alive then
                 local pData = planet.fixture:getUserData()
                 if pData and (pData.index == aData.index or pData.index == bData.index) then
@@ -153,84 +155,7 @@ end
 
 function love.keypressed(key)
     if key == "r" then
-        clearPlanets()
-        generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
+        planets.clearPlanets()
+        planets.generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
     end
-end
-
-
-function generateSolarSystem(numPlanets, minRadius, maxRadius, maxAttempts)
-    for i = 1, numPlanets do
-        local placed = false
-        local attempts = 0
-    
-        while not placed and attempts < maxAttempts do
-            attempts = attempts + 1
-    
-            local angle = math.random() * 2 * math.pi
-            local dist = math.random(100, 250)
-            local x = width / 2 + math.cos(angle) * dist
-            local y = height / 2 + math.sin(angle) * dist
-    
-            local tooClose = false
-    
-            for _, other in ipairs(solar_system) do
-                local ox, oy = other.body:getPosition()
-                local dx = x - ox
-                local dy = y - oy
-                local dSq = dx * dx + dy * dy
-                if dSq < (maxRadius * 2)^2 then
-                    tooClose = true
-                    break
-                end
-            end
-    
-            if not tooClose then
-                local planet = {}
-                planet.alive = true
-                planet.body = love.physics.newBody(world, x, y, "static")
-                planet.shape = love.physics.newCircleShape(love.math.random(minRadius, maxRadius))
-                planet.fixture = love.physics.newFixture(planet.body, planet.shape)
-    
-                table.insert(solar_system, planet)
-                planet.fixture:setUserData({ id="planet", index=#solar_system })
-                placed = true
-            end
-        end
-    
-        if not placed then
-            print("couldn't place planet " .. i .. " without overlap after " .. maxAttempts .. " attempts.")
-        end
-    end
-end
-
-function destroyPlanet(planet)
-    if (love.timer.getTime() - planet.explosionTime) < 0.02 then
-        love.graphics.setColor(1, 0.5, 0.1, 0.8)
-        love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), 5*planet.shape:getRadius())
-    else
-        -- Safe to finalize destruction
-        if planet.alive then
-            print("planet " .. planet.fixture:getUserData().index .. " destroyed")
-            planet.alive = false
-            planet.body:destroy()
-        end
-
-        -- Remove from solar_system
-        for i, p in ipairs(solar_system) do
-            if p == planet then
-                table.remove(solar_system, i)
-                break
-            end
-        end
-    end
-end
-
-function clearPlanets()
-    for _, planet in ipairs(solar_system) do
-        if planet.body and not planet.body:isDestroyed() then
-            planet.body:destroy()
-        end
-    end
-    solar_system = {}
 end
