@@ -4,6 +4,7 @@ function love.load()
 
     love.physics.setMeter(32)
     world = love.physics.newWorld(0, 0, true)
+    world:setCallbacks(beginContact, endContact)
 
     -- Physics settings/flags
     gravityStrength = 20000 
@@ -14,6 +15,8 @@ function love.load()
     ship.body = love.physics.newBody(world, width/4, height/4, "dynamic")
     ship.shape = love.physics.newPolygonShape(12, 10, 0, -15, -12, 10)    
     ship.fixture = love.physics.newFixture(ship.body, ship.shape)
+    ship.fixture:setUserData("ship")
+
     ship.thrustPower = 20
     ship.turnSpeed = 3 -- radians per second
 
@@ -22,31 +25,35 @@ function love.load()
 
     -- Make planet
     planet = {}
+    planet.alive = true
     planet.body = love.physics.newBody(world, width/2, height/2, "static")
     planet.shape = love.physics.newCircleShape(25)
     planet.fixture = love.physics.newFixture(planet.body, planet.shape)
+    planet.fixture:setUserData("planet")
 
     -- Graphics setup
-    love.window.setMode(650, 650)
+    love.window.setMode(width, height)
 end
 
 function love.update(dt)
     world:update(dt)
 
     -- Gravity well pull
-    local sx, sy = ship.body:getPosition()
-    local px, py = planet.body:getPosition()
+    if planet.alive == true then
+        local sx, sy = ship.body:getPosition()
+        local px, py = planet.body:getPosition()
 
-    local dx = px - sx
-    local dy = py - sy
-    local distSq = dx * dx + dy * dy
+        local dx = px - sx
+        local dy = py - sy
+        local distSq = dx * dx + dy * dy
 
-    if distSq > 0.1 then -- prevent divide by zero
-        local forceMag = gravityStrength / distSq
-        local angle = math.atan2(dy, dx)
-        local fx = math.cos(angle) * forceMag
-        local fy = math.sin(angle) * forceMag
-        ship.body:applyForce(fx, fy)
+        if distSq > 0.1 then -- prevent divide by zero
+            local forceMag = gravityStrength / distSq
+            local angle = math.atan2(dy, dx)
+            local fx = math.cos(angle) * forceMag
+            local fy = math.sin(angle) * forceMag
+            ship.body:applyForce(fx, fy)
+        end
     end
 
     -- ROTATE LEFT/RIGHT
@@ -94,9 +101,15 @@ end
 
 function love.draw()
     -- Draw planet
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), planet.shape:getRadius())
+    if planet.alive == true then
+        love.graphics.setColor(0, 0, 1)
+        love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), planet.shape:getRadius())
     
+        if planet.explosionTime then
+            destroyPlanet();
+        end
+    end
+
     -- Draw ship
     love.graphics.setColor(1, 1, 1)
 
@@ -112,4 +125,24 @@ function love.draw()
     end
 
     love.graphics.pop()
+end
+
+function beginContact(a, b, coll)
+    if (a:getUserData() == "planet" and b:getUserData() == "ship") or
+       (a:getUserData() == "ship" and b:getUserData() == "planet") then
+        if planet.alive then
+            planet.explosionTime = love.timer.getTime() -- trigger planet destruction
+        end
+    end
+end
+
+function destroyPlanet()
+    if love.timer.getTime() - planet.explosionTime < 1 then
+        love.graphics.setColor(1, 0.5, 0.1, 0.8)
+        love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), 100)
+        
+        print("planet destroyed")
+        planet.alive = false
+        planet.body:destroy()
+    end
 end
