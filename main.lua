@@ -26,9 +26,10 @@ function love.load()
 
     -- Make planets
     solar_system = {}
-    local numPlanets = 3;
-    local planetMaxRadius = 25
-    generateSolarSystem(numPlanets, planetMaxRadius, 1000)
+    numPlanets = 5
+    planetMinRadius = 5
+    planetMaxRadius = 25
+    generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
 
     -- Graphics setup
     love.window.setMode(width, height)
@@ -108,7 +109,7 @@ function love.draw()
             love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), planet.shape:getRadius())
             
             if planet.explosionTime then
-                destroyPlanet(planet);
+                destroyPlanet(planet)
             end
         end
     end
@@ -150,7 +151,15 @@ function beginContact(a, b, coll)
 
 end
 
-function generateSolarSystem(numPlanets, planetRadius, maxAttempts)
+function love.keypressed(key)
+    if key == "r" then
+        clearPlanets()
+        generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
+    end
+end
+
+
+function generateSolarSystem(numPlanets, minRadius, maxRadius, maxAttempts)
     for i = 1, numPlanets do
         local placed = false
         local attempts = 0
@@ -170,7 +179,7 @@ function generateSolarSystem(numPlanets, planetRadius, maxAttempts)
                 local dx = x - ox
                 local dy = y - oy
                 local dSq = dx * dx + dy * dy
-                if dSq < (planetRadius * 2)^2 then
+                if dSq < (maxRadius * 2)^2 then
                     tooClose = true
                     break
                 end
@@ -180,7 +189,7 @@ function generateSolarSystem(numPlanets, planetRadius, maxAttempts)
                 local planet = {}
                 planet.alive = true
                 planet.body = love.physics.newBody(world, x, y, "static")
-                planet.shape = love.physics.newCircleShape(planetRadius)
+                planet.shape = love.physics.newCircleShape(love.math.random(minRadius, maxRadius))
                 planet.fixture = love.physics.newFixture(planet.body, planet.shape)
     
                 table.insert(solar_system, planet)
@@ -196,12 +205,32 @@ function generateSolarSystem(numPlanets, planetRadius, maxAttempts)
 end
 
 function destroyPlanet(planet)
-    if love.timer.getTime() - planet.explosionTime < 1 then
+    if (love.timer.getTime() - planet.explosionTime) < 0.02 then
         love.graphics.setColor(1, 0.5, 0.1, 0.8)
-        love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), 100)
-        
-        print("planet " .. planet.fixture:getUserData().index .. " destroyed")
-        planet.alive = false
-        planet.body:destroy()
+        love.graphics.circle("fill", planet.body:getX(), planet.body:getY(), 5*planet.shape:getRadius())
+    else
+        -- Safe to finalize destruction
+        if planet.alive then
+            print("planet " .. planet.fixture:getUserData().index .. " destroyed")
+            planet.alive = false
+            planet.body:destroy()
+        end
+
+        -- Remove from solar_system
+        for i, p in ipairs(solar_system) do
+            if p == planet then
+                table.remove(solar_system, i)
+                break
+            end
+        end
     end
+end
+
+function clearPlanets()
+    for _, planet in ipairs(solar_system) do
+        if planet.body and not planet.body:isDestroyed() then
+            planet.body:destroy()
+        end
+    end
+    solar_system = {}
 end
