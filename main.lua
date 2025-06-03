@@ -124,11 +124,11 @@ function love.draw()
     -- Draw background grid with lensing effect
     local gridSpacing = 40
     local lensRadius = 60
-    local lensStrength = 30
+    local lensStrength = 70
     local segmentStep = 10
     local sx, sy = ship.body:getPosition()
 
-    love.graphics.setColor(0.2, 0.2, 0.25, 0.7)
+    love.graphics.setColor(0.25, 0.25, 0.25, 0.7)
     love.graphics.setPointSize(3)
 
     -- Horizontal grid lines
@@ -174,13 +174,13 @@ function love.draw()
         local r = 0.5 + 0.5 * math.sin(t)
         local g = 0.5 + 0.5 * math.sin(t + 2)
         local b = 0.5 + 0.5 * math.sin(t + 4)
-        local a = 0.13 + 0.07 * math.sin(angle * 4 + t)
+        local a = 0.07 + 0.07 * math.sin(angle * 4 + t)
         love.graphics.setColor(r, g, b, a)
         love.graphics.arc("fill", sx, sy, (innerR + outerR) / 2, angle, nextAngle)
     end
 
     -- Draw subtle black hole core
-    love.graphics.setColor(0, 0, 0, 0.5)
+    love.graphics.setColor(0, 0, 0, 0.4)
     love.graphics.circle("fill", sx, sy, lensRadius * 0.7)
     love.graphics.setColor(0.1, 0.1, 0.1, 0.7)
     love.graphics.circle("line", sx, sy, lensRadius)
