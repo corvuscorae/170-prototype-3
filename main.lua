@@ -103,29 +103,50 @@ function love.update(dt)
     end
 end
 
+-- Helper to apply lensing
+function lensWarp(x, y, sx, sy, lensRadius, lensStrength)
+    local dx = x - sx
+    local dy = y - sy
+    local dist = math.sqrt(dx * dx + dy * dy)
+    if dist < lensRadius then
+        local factor = 1 + lensStrength * (1 - dist / lensRadius)^2 * 0.02
+        return sx + dx * factor, sy + dy * factor
+    else
+        return x, y
+    end
+end
+
 function love.draw()
     -- Draw background grid with lensing effect
     local gridSpacing = 40
     local lensRadius = 60
     local lensStrength = 30
+    local segmentStep = 10
     local sx, sy = ship.body:getPosition()
 
     love.graphics.setColor(0.2, 0.2, 0.25, 0.7)
-    for x = 0, width, gridSpacing do
-        for y = 0, height, gridSpacing do
-            -- Calculate distance to ship
-            local dx = x - sx
-            local dy = y - sy
-            local dist = math.sqrt(dx*dx + dy*dy)
-            local nx, ny = x, y
-            if dist < lensRadius then
-                -- Warp grid point away from ship (simple lensing)
-                local factor = 1 + lensStrength * (1 - dist/lensRadius)^2 * 0.02
-                nx = sx + dx * factor
-                ny = sy + dy * factor
-            end
-            love.graphics.points(nx, ny)
+    love.graphics.setPointSize(3)
+
+    -- Horizontal grid lines
+    for y = 0, height, gridSpacing do
+        local points = {}
+        for x = 0, width, segmentStep do
+            local wx, wy = lensWarp(x, y, sx, sy, lensRadius, lensStrength)
+            table.insert(points, wx)
+            table.insert(points, wy)
         end
+        love.graphics.line(points)
+    end
+
+    -- Vertical grid lines
+    for x = 0, width, gridSpacing do
+        local points = {}
+        for y = 0, height, segmentStep do
+            local wx, wy = lensWarp(x, y, sx, sy, lensRadius, lensStrength)
+            table.insert(points, wx)
+            table.insert(points, wy)
+        end
+        love.graphics.line(points)
     end
 
     -- Black hole effect: event horizon and accretion disk
