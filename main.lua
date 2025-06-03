@@ -63,8 +63,12 @@ function love.update(dt)
     -- ROTATE LEFT/RIGHT
     if love.keyboard.isDown("left") then
         ship.body:setAngle(ship.body:getAngle() - ship.turnSpeed * dt)
+        isTurning = true;
     elseif love.keyboard.isDown("right") then
         ship.body:setAngle(ship.body:getAngle() + ship.turnSpeed * dt)
+        isTurning = true;
+    else
+        isTurning = false;
     end
 
     -- THRUST FORWARD
@@ -190,17 +194,20 @@ function love.draw()
     end
 
     -- Ship is invisible: do not draw ship polygon or thrust flame
-    --[[]
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.push()
-    love.graphics.translate(ship.body:getX(), ship.body:getY())
-    love.graphics.rotate(ship.body:getAngle())
-    love.graphics.polygon("line", ship.shape:getPoints())
+    -- only drawing ship when turning 
+    if isTurning then
+        love.graphics.setColor(1, 1, 1, 0.1)
+        love.graphics.push()
+        love.graphics.translate(ship.body:getX(), ship.body:getY())
+        love.graphics.rotate(ship.body:getAngle())
+        love.graphics.polygon("line", ship.shape:getPoints())
+        love.graphics.pop()
+    end
+    --[[
     if isThrusting then
         love.graphics.setColor(1, 0.5, 0)
         love.graphics.polygon("fill", 0, 15, 5, 25, -5, 25)
     end
-    love.graphics.pop()
     ]]
 end
 
