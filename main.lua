@@ -169,8 +169,12 @@ function love.draw()
         local nextAngle = ((i + 1) / segments) * 2 * math.pi
         local innerR = lensRadius * 1.05 + math.sin(love.timer.getTime() * 2 + angle * 3) * 3
         local outerR = diskRadius + math.cos(love.timer.getTime() * 2 + angle * 2) * 4
-        local r, g, b = 1, 0.7, 0.2
-        local a = 0.13 + 0.07 * math.sin(angle * 4 + love.timer.getTime())
+        local t = love.timer.getTime()
+
+        local r = 0.5 + 0.5 * math.sin(t)
+        local g = 0.5 + 0.5 * math.sin(t + 2)
+        local b = 0.5 + 0.5 * math.sin(t + 4)
+        local a = 0.13 + 0.07 * math.sin(angle * 4 + t)
         love.graphics.setColor(r, g, b, a)
         love.graphics.arc("fill", sx, sy, (innerR + outerR) / 2, angle, nextAngle)
     end
