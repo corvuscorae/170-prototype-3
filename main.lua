@@ -135,6 +135,12 @@ function love.draw()
         love.graphics.print("game over :(", 100, 100)
         love.graphics.print("press R to restart", 100, 150)
     else
+        -- show lives at top left of screen
+        love.graphics.push()
+        love.graphics.setColor(1,1,1)
+        love.graphics.print("lives: " .. 3 - playerHits, 10, 10)
+        love.graphics.pop()
+
         -- Draw background grid with lensing effect
         local gridSpacing = 40
         local lensRadius = 60
