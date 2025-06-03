@@ -32,6 +32,7 @@ function love.load()
     planetMinRadius = 5
     planetMaxRadius = 25
     planets.generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
+    destroyedPlanets = 0
 
     -- Graphics setup
     love.window.setMode(width, height)
@@ -170,10 +171,10 @@ function love.draw()
         local innerR = lensRadius * 1.05 + math.sin(love.timer.getTime() * 2 + angle * 3) * 3
         local outerR = diskRadius + math.cos(love.timer.getTime() * 2 + angle * 2) * 4
         local t = love.timer.getTime()
-
-        local r = 0.5 + 0.5 * math.sin(t)
-        local g = 0.5 + 0.5 * math.sin(t + 2)
-        local b = 0.5 + 0.5 * math.sin(t + 4)
+        print(destroyedPlanets)
+        local r = (0.1*destroyedPlanets) + 0.3 * math.sin(t)
+        local g = (0.1*destroyedPlanets) + 0.3 * math.sin(t + 2)
+        local b = (0.1*destroyedPlanets) + 0.3 * math.sin(t + 4)
         local a = 0.07 + 0.07 * math.sin(angle * 4 + t)
         love.graphics.setColor(r, g, b, a)
         love.graphics.arc("fill", sx, sy, (innerR + outerR) / 2, angle, nextAngle)
@@ -239,6 +240,7 @@ function love.keypressed(key)
     if key == "r" then
         love.audio.stop()
         planets.clearPlanets()
+        destroyedPlanets = 0
         planets.generateSolarSystem(numPlanets, planetMinRadius, planetMaxRadius, 1000)
     end
 end

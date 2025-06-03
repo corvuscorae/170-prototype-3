@@ -84,6 +84,7 @@ function P.destroyPlanet(planet)
         for i, p in ipairs(P.solar_system) do
             if p == planet then
                 table.remove(P.solar_system, i)
+                destroyedPlanets = destroyedPlanets + 1
                 break
             end
         end
