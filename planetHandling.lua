@@ -48,6 +48,9 @@ function P.generateSolarSystem(numPlanets, minRadius, maxRadius, maxAttempts)
                 planet.color = colorBag:next()
                 planet.loop = loopBag:next()
                 planet.fixture = love.physics.newFixture(planet.body, planet.shape)
+
+                planet.bullets = {}
+                planet.lastShot = love.timer.getTime()
     
                 table.insert(P.solar_system, planet)
                 planet.fixture:setUserData({ id="planet", index=#P.solar_system })
@@ -99,5 +102,59 @@ function P.clearPlanets()
     end
     P.solar_system = {}
 end
+
+function P.updateBullets(dt)
+    for _, planet in ipairs(P.solar_system) do
+        local now = love.timer.getTime()
+        if now - planet.lastShot > 1.5 then  -- fire every 1.5 seconds
+            planet.lastShot = now
+
+            local px, py = planet.body:getPosition()
+            local angle = math.random() * 2 * math.pi
+            local speed = 200
+
+            local bullet = {
+                body = love.physics.newBody(world, px, py, "dynamic"),
+                shape = love.physics.newCircleShape(3),
+                ttl = 3  -- seconds to live
+            }
+            bullet.fixture = love.physics.newFixture(bullet.body, bullet.shape)
+            bullet.body:setLinearVelocity(math.cos(angle) * speed, math.sin(angle) * speed)
+            bullet.body:setUserData({ _destroy = false })
+            bullet.fixture:setUserData({ id = "bullet" })
+
+            table.insert(planet.bullets, bullet)
+        end
+
+        -- Update + remove dead bullets
+        for i = #planet.bullets, 1, -1 do
+            local b = planet.bullets[i]
+            b.ttl = b.ttl - dt
+            local data = b.body:getUserData()
+            local shouldDestroy = (b.ttl <= 0) or (data and data._destroy)
+
+            if shouldDestroy then
+                if not b.body:isDestroyed() then
+                    b.body:destroy()
+                end
+                table.remove(planet.bullets, i)
+            end
+        end
+
+
+    end
+end
+
+function P.drawBullets()
+    love.graphics.setColor(1, 1, 0.5)
+    for _, planet in ipairs(P.solar_system) do
+        for _, b in ipairs(planet.bullets) do
+            local x, y = b.body:getPosition()
+            love.graphics.circle("fill", x, y, b.shape:getRadius())
+        end
+    end
+end
+
+
 
 return P
