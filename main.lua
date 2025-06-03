@@ -193,7 +193,7 @@ function love.draw()
             local r = (0.1*destroyedPlanets) + 0.3 * math.sin(t)
             local g = (0.1*destroyedPlanets) + 0.3 * math.sin(t + 2)
             local b = (0.1*destroyedPlanets) + 0.3 * math.sin(t + 4)
-            local a = 0.07 + 0.07 * math.sin(angle * 4 + t)
+            local a = 0.3 + 0.3 * math.sin(angle * 4 + t)
             love.graphics.setColor(r, g, b, a)
             love.graphics.arc("fill", sx, sy, (innerR + outerR) / 2, angle, nextAngle)
         end
@@ -220,7 +220,7 @@ function love.draw()
         -- Ship is invisible: do not draw ship polygon or thrust flame
         -- only drawing ship when turning 
         if isTurning then
-            love.graphics.setColor(1, 1, 1, 0.1)
+            love.graphics.setColor(1, 1, 1, 0.2)
             love.graphics.push()
             love.graphics.translate(ship.body:getX(), ship.body:getY())
             love.graphics.rotate(ship.body:getAngle())
