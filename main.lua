@@ -104,7 +104,59 @@ function love.update(dt)
 end
 
 function love.draw()
-    -- Draw planet
+    -- Draw background grid with lensing effect
+    local gridSpacing = 40
+    local lensRadius = 60
+    local lensStrength = 30
+    local sx, sy = ship.body:getPosition()
+
+    love.graphics.setColor(0.2, 0.2, 0.25, 0.7)
+    for x = 0, width, gridSpacing do
+        for y = 0, height, gridSpacing do
+            -- Calculate distance to ship
+            local dx = x - sx
+            local dy = y - sy
+            local dist = math.sqrt(dx*dx + dy*dy)
+            local nx, ny = x, y
+            if dist < lensRadius then
+                -- Warp grid point away from ship (simple lensing)
+                local factor = 1 + lensStrength * (1 - dist/lensRadius)^2 * 0.02
+                nx = sx + dx * factor
+                ny = sy + dy * factor
+            end
+            love.graphics.points(nx, ny)
+        end
+    end
+
+    -- Black hole effect: event horizon and accretion disk
+    -- Draw radial gradient for event horizon
+    for r = lensRadius * 0.7, lensRadius, 2 do
+        local alpha = 0.15 * (1 - (r - lensRadius * 0.7) / (lensRadius * 0.3))
+        love.graphics.setColor(0, 0, 0, alpha)
+        love.graphics.circle("fill", sx, sy, r)
+    end
+
+    -- Draw swirling accretion disk
+    local diskRadius = lensRadius * 1.2
+    local segments = 32
+    for i = 1, segments do
+        local angle = (i / segments) * 2 * math.pi
+        local nextAngle = ((i + 1) / segments) * 2 * math.pi
+        local innerR = lensRadius * 1.05 + math.sin(love.timer.getTime() * 2 + angle * 3) * 3
+        local outerR = diskRadius + math.cos(love.timer.getTime() * 2 + angle * 2) * 4
+        local r, g, b = 1, 0.7, 0.2
+        local a = 0.13 + 0.07 * math.sin(angle * 4 + love.timer.getTime())
+        love.graphics.setColor(r, g, b, a)
+        love.graphics.arc("fill", sx, sy, (innerR + outerR) / 2, angle, nextAngle)
+    end
+
+    -- Draw subtle black hole core
+    love.graphics.setColor(0, 0, 0, 0.5)
+    love.graphics.circle("fill", sx, sy, lensRadius * 0.7)
+    love.graphics.setColor(0.1, 0.1, 0.1, 0.7)
+    love.graphics.circle("line", sx, sy, lensRadius)
+
+    -- Draw planets
     for _, planet in ipairs(planets.solar_system) do        
         if planet.alive == true then
             love.graphics.setColor(planet.color)
@@ -116,21 +168,19 @@ function love.draw()
         end
     end
 
-    -- Draw ship
+    -- Ship is invisible: do not draw ship polygon or thrust flame
+    --[[]
     love.graphics.setColor(1, 1, 1)
-
     love.graphics.push()
-
     love.graphics.translate(ship.body:getX(), ship.body:getY())
     love.graphics.rotate(ship.body:getAngle())
     love.graphics.polygon("line", ship.shape:getPoints())
-
     if isThrusting then
-        love.graphics.setColor(1, 0.5, 0) -- orange flame
-        love.graphics.polygon("fill", 0, 15, 5, 25, -5, 25) -- triangle pointing down
+        love.graphics.setColor(1, 0.5, 0)
+        love.graphics.polygon("fill", 0, 15, 5, 25, -5, 25)
     end
-
     love.graphics.pop()
+    ]]
 end
 
 function beginContact(a, b, coll)
